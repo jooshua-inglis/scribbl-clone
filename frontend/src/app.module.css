@@ -1,0 +1,35 @@
+.game-container {
+    display: grid;
+    grid-template: 
+        'banner banner banner' 50px
+        'leaderboard game guessing' 800px
+        / 250px 800px 250px   
+    ;
+    margin: 0 auto;
+    max-width: 1200px;
+    gap: 5px;
+    color: #0c5c54;
+}
+
+.game-container > * {
+    background-color: #CBF3F0;
+    border-radius: 1rem;
+}
+
+.banner {
+    grid-area: banner;
+    padding: 5px;
+}
+
+.game {
+    grid-area: game;
+    padding: 10px;
+}
+
+.guessing {
+    grid-area: guessing;
+}
+
+.leaderboard {
+    grid-area: leaderboard;
+}

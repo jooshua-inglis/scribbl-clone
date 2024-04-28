@@ -1,0 +1,17 @@
+.playerList {
+    display: flex;
+    flex-direction: column;
+}
+
+.playerListItem {
+    height: 3rem;
+    padding: 1rem;
+}
+
+.odd {
+    background-color: antiquewhite;
+}
+
+.even {
+    background-color: blanchedalmond;
+}
