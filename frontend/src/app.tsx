@@ -10,7 +10,7 @@ import {
 import Home from '@/home';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { DrawingCanvas, Line } from '@/ui/drawingCanvas';
-import { Guesser } from '@/ui/guesser';
+import { Guess, Guesser } from '@/ui/guesser';
 import { PlayerList } from '@/ui/playerList';
 import { useCallback, useEffect, useState } from 'react';
 import classes from './app.module.css';
@@ -70,6 +70,7 @@ function Lobby() {
 function Main() {
     const gameState = useAppSelector((state) => state.game);
     const [lines, setLines] = useState<Line[]>([]);
+    const [guesses, setGuesses] = useState<Guess[]>([])
 
     const onDraw = useCallback((lines: Line[]) => {
         const i = lines.length - 1;
@@ -115,11 +116,32 @@ function Main() {
         }
     }, [gameState.dataState, gameState.game?.state]);
 
+    useEffect(() => {
+        const guessCleanup = gameWebsocket.addEventListener(GameEventTypes.GUESS_OCCURRED, ({payload}) => {
+            setGuesses((prevValue) => {
+                const player = gameState.players[payload.playerId]
+                if (!player) {
+                    return prevValue
+                }
+                return [...prevValue, {
+                    isCorrect: payload.isCorrect,
+                    playerName: player.name,
+                    guess: payload.guess
+                }]
+            })
+        })
+
+        return () => {
+            guessCleanup()
+        }
+    }, [gameState.players])
+
     if (gameState.dataState !== 'loaded') {
         return <div>Loading</div>;
     }
 
     const { game, playerId, players } = gameState;
+    console.log(gameState.players)
 
     return (
         <div className={classes['game-container']}>
@@ -160,7 +182,7 @@ function Main() {
                 />
             </div>
             <div className={classes['guessing']}>
-                <Guesser guesses={[]} />
+                <Guesser guesses={guesses} />
             </div>
         </div>
     );

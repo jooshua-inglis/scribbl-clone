@@ -2,12 +2,14 @@ import { apiMakeGuess } from '@/game/api';
 import { useAppSelector } from '@/store/store';
 import { KeyboardEvent, useCallback, useState } from 'react';
 
+export type Guess = {
+    playerName: string;
+    guess?: string;
+    isCorrect: boolean;
+}
+
 type GuesserProps = {
-    guesses: {
-        playerName: string;
-        guess?: string;
-        isCorrect: boolean;
-    }[];
+    guesses: Guess[]
 };
 export function Guesser({ guesses }: GuesserProps) {
     const gameId = useAppSelector((state) => state.game.gameId);
@@ -54,7 +56,7 @@ export function Guesser({ guesses }: GuesserProps) {
                     }}
                 />
             </div>
-            {guesses.map(guess => {
+            {[...guesses].reverse().map(guess => {
                 return <Bubble {...guess} />
             })}
         </div>

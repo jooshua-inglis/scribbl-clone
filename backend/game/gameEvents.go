@@ -124,12 +124,26 @@ func AddPlayer(gameId string, player *data.Player) error {
 }
 
 func UpsertLine(gameId string, line Line, lineIndex int) error {
-	slog.Info("hello", "there", lineIndex)
 	return publishEvent(gameId, GameEvent{
 		EventType: GAME_EVENT_DRAWING,
 		EventPayload: DrawingEventPayload{
 			Line:  line,
 			Index: lineIndex,
+		},
+	})
+}
+
+func GuessOccurred(gameId string, playerId string, guess string, isCorrect bool) error {
+	return publishEvent(gameId, GameEvent{
+		EventType: GAME_EVENT_GUESS_OCCURRED,
+		EventPayload: struct {
+			Guess     string `json:"guess"`
+			PlayerId  string `json:"playerId"`
+			IsCorrect bool   `json:"isCorrect"`
+		}{
+			Guess:     guess,
+			PlayerId:  playerId,
+			IsCorrect: isCorrect,
 		},
 	})
 }

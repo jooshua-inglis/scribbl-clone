@@ -60,6 +60,8 @@ func MakeGuess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	game.GuessOccurred(gameId, guesserId, body.Guess, g.Word == body.Guess)
+
 	if g.Word != body.Guess {
 		slog.Debug("Incorrect guess")
 		w.Write(utils.STANDARD_SUCCESS_RESPONSE)

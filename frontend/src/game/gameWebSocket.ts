@@ -1,7 +1,14 @@
 import { WEBSOCKET_HOST } from '@/constants';
 import { PubSub } from '@/eventListener/eventListener';
 import { getGame, getPlayers } from '@/game/api';
-import { addPlayers, clearGame, editPlayer, setGame, setLoadingState, updateGame } from '@/game/game.slice';
+import {
+    addPlayers,
+    clearGame,
+    editPlayer,
+    setGame,
+    setLoadingState,
+    updateGame,
+} from '@/game/game.slice';
 import { Game, isPlayerActiveState, Player, ZGame, ZPlayer } from '@/game/types';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { Line } from '@/ui/drawingCanvas';
@@ -28,7 +35,6 @@ export const GameStates = {
 
 export type GameStateType = (typeof GameStates)[keyof typeof GameStates];
 
-
 // ====== EVENT TYPES =========
 type UpdateGameEvent = {
     type: (typeof GameEventTypes)['GAME_UPDATE'];
@@ -39,13 +45,15 @@ type UpdatePlayerEvent = {
     type: (typeof GameEventTypes)['PLAYER_UPDATE'];
     payload: {
         PlayerId: string;
-        Updates: Partial<{
-            // TODO Scribbl-1 remove caps from schema
-            Name: string;
-            Score: number;
-            GuessedCorrect: boolean;
-            ActiveState: 'creating' | 'active' | 'disconnected';
-        } & Player>;
+        Updates: Partial<
+            {
+                // TODO Scribbl-1 remove caps from schema
+                Name: string;
+                Score: number;
+                GuessedCorrect: boolean;
+                ActiveState: 'creating' | 'active' | 'disconnected';
+            } & Player
+        >;
     };
 };
 
@@ -56,33 +64,48 @@ type PlayerAddedEvent = {
 
 type GameUpdateEvent = {
     type: (typeof GameEventTypes)['SCORE_UPDATE'];
-    payload: Record<string, number>
-}
+    payload: Record<string, number>;
+};
 
-type DrawingEvent =  {
-    type: (typeof GameEventTypes)['DRAWING']
+type DrawingEvent = {
+    type: (typeof GameEventTypes)['DRAWING'];
     payload: {
-        line: Line,
-        index: number,
-    }
-}
+        line: Line;
+        index: number;
+    };
+};
 
-type GameWebsocketEvent = UpdatePlayerEvent | UpdateGameEvent | PlayerAddedEvent | GameUpdateEvent | DrawingEvent;
+type GuessEvent = {
+    type: (typeof GameEventTypes)['GUESS_OCCURRED'];
+    payload: {
+        guess: string;
+        playerId: string;
+        isCorrect: boolean;
+    };
+};
+
+type GameWebsocketEvent =
+    | UpdatePlayerEvent
+    | UpdateGameEvent
+    | PlayerAddedEvent
+    | GameUpdateEvent
+    | DrawingEvent
+    | GuessEvent;
 
 function createConnection(url: string) {
-    const ws = new WebSocket(url)
+    const ws = new WebSocket(url);
     return new Promise<WebSocket>((resolve, reject) => {
         ws.onerror = (error) => {
-            ws.onerror = () => {}
-            ws.onopen = () => {}
-            reject(error)
-        }
+            ws.onerror = () => {};
+            ws.onopen = () => {};
+            reject(error);
+        };
         ws.onopen = () => {
-            ws.onerror = () => {}
-            ws.onopen = () => {}
-            resolve(ws)
-        }
-    })
+            ws.onerror = () => {};
+            ws.onopen = () => {};
+            resolve(ws);
+        };
+    });
 }
 
 export class GameWebsocket {
@@ -100,8 +123,8 @@ export class GameWebsocket {
         const payload = {
             EventType: event.type,
             EventPayload: event.payload,
-        } as const
-        this.ws?.send(JSON.stringify(payload))
+        } as const;
+        this.ws?.send(JSON.stringify(payload));
     }
 
     public async setPlayerId(gameId: string) {
@@ -112,33 +135,33 @@ export class GameWebsocket {
 
         this.ws?.close();
 
-        this.ws = await createConnection(`${WEBSOCKET_HOST}/game_connection/${this.gameId}`)
+        this.ws = await createConnection(`${WEBSOCKET_HOST}/game_connection/${this.gameId}`);
 
         this.ws.onerror = () => {
             console.error('Websockets encountered an error');
         };
-        
+
         this.ws.onmessage = (ev) => {
             const { data } = ev;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const parsedData: any = JSON.parse(data);
 
-            if(parsedData.EventType === GameEventTypes.PLAYER_ADDED) {
-                const parsedPlayer = ZPlayer.safeParse(parsedData.EventPayload)
+            if (parsedData.EventType === GameEventTypes.PLAYER_ADDED) {
+                const parsedPlayer = ZPlayer.safeParse(parsedData.EventPayload);
                 if (!parsedPlayer.success) {
-                    console.trace("Invalid player")
-                    return
+                    console.trace('Invalid player');
+                    return;
                 }
-                parsedData.EventPayload = parsedPlayer.data
+                parsedData.EventPayload = parsedPlayer.data;
             }
-            if(parsedData.EventType === GameEventTypes.GAME_UPDATE) {
-                console.log(parsedData)
-                const parsedGame = ZGame.partial().safeParse(parsedData.EventPayload) 
+            if (parsedData.EventType === GameEventTypes.GAME_UPDATE) {
+                console.log(parsedData);
+                const parsedGame = ZGame.partial().safeParse(parsedData.EventPayload);
                 if (!parsedGame.success) {
-                    console.trace("Invalid game")
-                    return
+                    console.trace('Invalid game');
+                    return;
                 }
-                parsedData.EventPayload = parsedGame.data
+                parsedData.EventPayload = parsedGame.data;
             }
             this.pubSub.dispatchEvent({
                 type: parsedData.EventType,
@@ -157,7 +180,6 @@ export class GameWebsocket {
 }
 const gameWebSocket = GameWebsocket.getInstance();
 
-
 export function useInitialiseData() {
     const playerId = useAppSelector((state) => state.game.playerId);
     const gameId = useAppSelector((state) => state.game.gameId);
@@ -173,16 +195,14 @@ export function useInitialiseData() {
         dispatch(clearGame());
         Promise.all([
             getGame(gameId).then((game) => dispatch(setGame(game))),
-            getPlayers(gameId).then((players) => dispatch(addPlayers(players)))
+            getPlayers(gameId).then((players) => dispatch(addPlayers(players))),
         ]).then(() => {
             dispatch(setLoadingState('loaded'));
-        })
-
+        });
     }, [playerId, gameId, dispatch]);
 }
 
 export function useGameWebsocket() {
-      
     const dispatch = useAppDispatch();
     useEffect(() => {
         const updatedPlayerCleanup = gameWebSocket.addEventListener(
@@ -202,31 +222,33 @@ export function useGameWebsocket() {
                 if ('GuessedCorrect' in event.payload.Updates) {
                     updateSet.guessedCorrect = event.payload.Updates.GuessedCorrect;
                 }
-                console.log(updateSet)
+                console.log(updateSet);
                 dispatch(editPlayer({ id: event.payload.PlayerId, updateSet }));
-            },
+            }
         );
 
         const addedPlayerCleanup = gameWebSocket.addEventListener(
             GameEventTypes.PLAYER_ADDED,
             (event) => {
                 dispatch(addPlayers(event.payload));
-            },
+            }
         );
 
         const gameUpdatedCleanup = gameWebSocket.addEventListener(
-            GameEventTypes.GAME_UPDATE, event => {
-                dispatch(updateGame(event.payload))
+            GameEventTypes.GAME_UPDATE,
+            (event) => {
+                dispatch(updateGame(event.payload));
             }
-        )
+        );
 
         const scoreUpdateCleanup = gameWebSocket.addEventListener(
-            GameEventTypes.SCORE_UPDATE, event => {
+            GameEventTypes.SCORE_UPDATE,
+            (event) => {
                 for (const [key, score] of Object.entries(event.payload)) {
-                    dispatch(editPlayer({ id: key, updateSet: { score }}))
+                    dispatch(editPlayer({ id: key, updateSet: { score } }));
                 }
             }
-        )
+        );
 
         return () => {
             updatedPlayerCleanup();
